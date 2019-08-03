@@ -1,70 +1,78 @@
-#!/bin/bash
-function vvod_danih {
-echo "Давайка по пробуем по играться с числами, ни каких дробей и букв и всякой такой фигни, только целые числа"
-echo "Давай первую длину"
-read a
-echo "Давай вторую не, тушуйся"
-read b
-echo "ну давай епта выжми из себя третий размер"
-read c
-echo "------------------------------------"
+#!/bin/sh -xe
 
-proverka_na_chislo
+APP=${1- ./shmest}
 
+expect_success() {
+    set -e
+    res="$(echo $1 $2 $3 | $APP)"
+    [ "$res" = "$4" ]
+    res="$(echo $1 $3 $2 | $APP)"
+    [ "$res" = "$4" ]
+    res="$(echo $2 $1 $3 | $APP)"
+    [ "$res" = "$4" ]
+    res="$(echo $2 $3 $1 | $APP)"
+    [ "$res" = "$4" ]
+    res="$(echo $3 $1 $2 | $APP)"
+    [ "$res" = "$4" ]
+    res="$(echo $3 $2 $1 | $APP)"
+    [ "$res" = "$4" ]
+    set +e
 }
 
-# --------------------------------------------------
-
-function proverka_treugolnika {
-if [[ $a = $b && $a = $c && $c = $b ]]; then
-
-        echo "Равносторонний треугольничег вышел"
-
-elif [[ $a = $b || $a = $c || $c = $b ]]; then
-
-        echo "Равнобедренный треугольничег вышел"
-else
-        echo "Обычный треугольничег вышел"
-fi
+expect_fail() {
+    set -e
+    ! res="$(echo $1 $2 $3 | $APP)"
+    [ -z "$res" ]
+    ! res="$(echo $1 $3 $2 | $APP)"
+    [ -z "$res" ] || echo "'$res'"
+    ! res="$(echo $2 $1 $3 | $APP)"
+    [ -z "$res" ]
+    ! res="$(echo $2 $3 $1 | $APP)"
+    [ -z "$res" ]
+    ! res="$(echo $3 $1 $2 | $APP)"
+    [ -z "$res" ]
+    ! res="$(echo $3 $2 $1 | $APP)"
+    [ -z "$res" ]
 }
 
-#---------------------------------------------------
-
-function proverka_na_treugolnik {
-
-if [[ $(( a + b )) -le $c || $(( c + b )) -le $a || $(( a + c )) -le $b ]]; then
-
-        echo "ты зачем так балуешься и у нас стобой вышел не треугольничег а фиг знает что, епа мать"
-        exit 1
-else
-  echo "красавчег могет умеешь практикуешь"
-  echo "------------------------------------------"
-  proverka_treugolnika
-fi
-}
-
-#---------------------------------------------------
-
-function proverka_na_chislo {
-
-check_a=`echo "$a" | grep -E ^\-?[0-9]+$`
-check_b=`echo "$b" | grep -E ^\-?[0-9]+$`
-check_c=`echo "$c" | grep -E ^\-?[0-9]+$`
+R="Обычный треугольник"
+I="Равнобедренный треугольник"
+E="Равносторонний треугольник"
 
 
-if [[ "$check_a" -ne '' &&  "$check_b" != ''  &&  "$check_c" != '' ]]; then
-   echo "О мой бог ты смог ввести 3 цифры как я тебя и просил, респект чувак"
-   echo "------------------------------------"
-   proverka_na_treugolnik
-else
-  echo "Ты читал ваще условия ввода значений"
-  exit 1
-fi
-}
+expect_success 1 1 1 "$E"
+expect_success 1000 1000 1000 "$E"
+#expect_success 18446744073709551616 18446744073709551616 18446744073709551616 "$E"
 
-#---------------------------------------------------
+expect_success 2 2 1 "$I"
+expect_success 1000 1000 100 "$I"
+#expect_success 18446744073709551616 18446744073709551616 18446744073709551615 "$I"
 
-echo "------------------------------------"
+expect_success 4 3 2 "$R"
+expect_success 4000 3000 2000 "$R"
+#expect_success 1844674407370955161600 1844674407370955161601 1844674407370955161602 "$R"
 
-vvod_danih
+expect_fail 0 0 0
+expect_fail -1 -1 -1
+expect_fail a a a
 
+expect_fail 0 0 1
+expect_fail 0 0 a
+expect_fail 0 0 -1
+expect_fail -1 -1 1
+expect_fail -1 -1 0
+expect_fail -1 -1 a 
+expect_fail a a 1
+expect_fail a a 0
+expect_fail a a -1
+
+expect_fail 0 1 2
+expect_fail 1 2 3
+expect_fail a b c
+expect_fail -1 -2 -3
+expect_fail -1 0 -2
+expect_fail -1 a 0
+
+expect_fail 1 2 '3 4'
+expect_fail 1 2
+expect_fail '4 3 2 1'
